@@ -64,7 +64,7 @@ public class AdminPanel extends JFrame {
     private void addUser() {
 
         JTextField username = new JTextField();
-        JTextField password = new JTextField();
+        JPasswordField password = new JPasswordField();
 
         String[] roles = {"admin", "employee"};
         JComboBox<String> roleBox = new JComboBox<>(roles);
@@ -85,7 +85,7 @@ public class AdminPanel extends JFrame {
             boolean success = dao.addUser(
                     new User(0,
                             username.getText(),
-                            password.getText(),
+                            new String(password.getPassword()).trim(),
                             roleBox.getSelectedItem().toString()
                     )
             );

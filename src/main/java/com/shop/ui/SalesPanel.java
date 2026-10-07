@@ -43,43 +43,53 @@ public class SalesPanel extends JPanel {
 
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        setBackground(Color.WHITE);
+        UITheme.styleRoot(this);
 
         // ================= TOP =================
         JPanel top = new JPanel(new GridLayout(2, 1, 10, 10));
-        top.setBackground(Color.WHITE);
+        top.setOpaque(false);
 
         // CUSTOMER PANEL
         JPanel customerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        customerPanel.setBackground(Color.WHITE);
+        customerPanel.setOpaque(false);
 
         customerBox = new JComboBox<>();
         customerBox.setPreferredSize(new Dimension(250, 30));
+        UITheme.styleCombo(customerBox);
 
         loadCustomers();
 
-        customerPanel.add(new JLabel("Customer:"));
+        JLabel customerLabel = new JLabel("Customer:");
+        UITheme.styleLabel(customerLabel);
+        customerPanel.add(customerLabel);
         customerPanel.add(customerBox);
 
         top.add(customerPanel);
 
         // PRODUCT PANEL
         JPanel productPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        productPanel.setBackground(Color.WHITE);
+        productPanel.setOpaque(false);
 
         productBox = new JComboBox<>();
         productBox.setPreferredSize(new Dimension(250, 30));
+        UITheme.styleCombo(productBox);
 
         loadProducts();
 
         qtyField = new JTextField(5);
+        UITheme.styleField(qtyField);
 
         JButton addBtn = new JButton("Add Item");
+        UITheme.stylePrimaryButton(addBtn);
 
-        productPanel.add(new JLabel("Product:"));
+        JLabel productLabel = new JLabel("Product:");
+        UITheme.styleLabel(productLabel);
+        productPanel.add(productLabel);
         productPanel.add(productBox);
 
-        productPanel.add(new JLabel("Qty:"));
+        JLabel qtyLabel = new JLabel("Qty:");
+        UITheme.styleLabel(qtyLabel);
+        productPanel.add(qtyLabel);
         productPanel.add(qtyField);
 
         productPanel.add(addBtn);
@@ -100,18 +110,20 @@ public class SalesPanel extends JPanel {
         };
 
         table = new JTable(model);
-        table.setRowHeight(25);
+        UITheme.styleTable(table);
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add(UITheme.wrapTable(table), BorderLayout.CENTER);
 
         // ================= BOTTOM =================
         JPanel bottom = new JPanel(new BorderLayout());
-        bottom.setBackground(Color.WHITE);
+        bottom.setOpaque(false);
 
         totalLabel = new JLabel("Total: Rs. 0.0");
-        totalLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        totalLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        totalLabel.setForeground(UITheme.TEXT);
 
         JButton billBtn = new JButton("Generate Bill");
+        UITheme.stylePrimaryButton(billBtn);
 
         bottom.add(totalLabel, BorderLayout.WEST);
         bottom.add(billBtn, BorderLayout.EAST);

@@ -26,7 +26,7 @@ public class DashboardPanel extends JPanel {
         this.user = user;
 
         setLayout(new BorderLayout(15, 15));
-        setBackground(Color.WHITE);
+        UITheme.styleRoot(this);
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // ================= HEADER =================
@@ -34,9 +34,10 @@ public class DashboardPanel extends JPanel {
         header.setOpaque(false);
 
         JLabel welcome = new JLabel("Dashboard");
-        welcome.setFont(new Font("Arial", Font.BOLD, 20));
+        UITheme.styleTitle(welcome);
 
         JButton refreshBtn = new JButton("Refresh");
+        UITheme.stylePrimaryButton(refreshBtn);
 
         header.add(welcome, BorderLayout.WEST);
         header.add(refreshBtn, BorderLayout.EAST);
@@ -101,7 +102,7 @@ public class DashboardPanel extends JPanel {
                 false
         );
 
-        return new ChartPanel(chart);
+        return UITheme.chartPanel(chart);
     }
 
     // ================= SALES CHART =================
@@ -123,20 +124,21 @@ public class DashboardPanel extends JPanel {
                 dataset
         );
 
-        return new ChartPanel(chart);
+        return UITheme.chartPanel(chart);
     }
 
     // ================= CARD =================
     private JPanel createCard(String title, int value) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(new Color(245, 247, 250));
-        card.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        UITheme.styleCard(card);
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        UITheme.styleMuted(titleLabel);
 
         JLabel valueLabel = new JLabel(String.valueOf(value));
-        valueLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        valueLabel.setForeground(UITheme.TEXT);
         valueLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         card.add(titleLabel, BorderLayout.NORTH);

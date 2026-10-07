@@ -22,14 +22,21 @@ public class CustomerPanel extends JPanel {
 
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        UITheme.styleRoot(this);
 
         // --- TOP PANEL ---
-        JPanel top = new JPanel();
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        top.setOpaque(false);
         searchField = new JTextField(20);
         JButton searchBtn = new JButton("Search");
         JButton resetBtn = new JButton("Reset");
+        UITheme.styleField(searchField);
+        UITheme.stylePrimaryButton(searchBtn);
+        UITheme.styleButton(resetBtn);
 
-        top.add(new JLabel("Search by Name:"));
+        JLabel searchLabel = new JLabel("Search by Name:");
+        UITheme.styleLabel(searchLabel);
+        top.add(searchLabel);
         top.add(searchField);
         top.add(searchBtn);
         top.add(resetBtn);
@@ -41,13 +48,18 @@ public class CustomerPanel extends JPanel {
             public boolean isCellEditable(int r,int c){return false;}
         };
         table = new JTable(model);
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        UITheme.styleTable(table);
+        add(UITheme.wrapTable(table), BorderLayout.CENTER);
 
         // --- BUTTONS ---
-        JPanel bottom = new JPanel();
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
+        bottom.setOpaque(false);
         JButton addBtn = new JButton("Add Customer");
         JButton editBtn = new JButton("Edit Customer");
         JButton deleteBtn = new JButton("Delete Customer");
+        UITheme.stylePrimaryButton(addBtn);
+        UITheme.styleButton(editBtn);
+        UITheme.styleDangerButton(deleteBtn);
 
         bottom.add(addBtn);
         bottom.add(editBtn);
@@ -67,7 +79,10 @@ public class CustomerPanel extends JPanel {
         editBtn.addActionListener(e -> editCustomer());
         deleteBtn.addActionListener(e -> deleteCustomer());
         searchBtn.addActionListener(e -> searchCustomer());
-        resetBtn.addActionListener(e -> loadCustomers());
+        resetBtn.addActionListener(e -> {
+            searchField.setText("");
+            loadCustomers();
+        });
 
         loadCustomers();
     }

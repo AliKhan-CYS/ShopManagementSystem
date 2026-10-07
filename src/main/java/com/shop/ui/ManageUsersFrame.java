@@ -26,10 +26,11 @@ public class ManageUsersFrame extends JFrame {
         setSize(700, 450);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         JPanel main = new JPanel(new BorderLayout(10, 10));
         main.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        main.setBackground(Color.WHITE);
+        UITheme.styleRoot(main);
 
         add(main);
 
@@ -40,8 +41,13 @@ public class ManageUsersFrame extends JFrame {
         searchField = new JTextField(20);
         JButton searchBtn = new JButton("Search");
         JButton resetBtn = new JButton("Reset");
+        UITheme.styleField(searchField);
+        UITheme.stylePrimaryButton(searchBtn);
+        UITheme.styleButton(resetBtn);
 
-        top.add(new JLabel("Search:"));
+        JLabel searchLabel = new JLabel("Search:");
+        UITheme.styleLabel(searchLabel);
+        top.add(searchLabel);
         top.add(searchField);
         top.add(searchBtn);
         top.add(resetBtn);
@@ -58,9 +64,9 @@ public class ManageUsersFrame extends JFrame {
         };
 
         table = new JTable(model);
-        table.setRowHeight(25);
+        UITheme.styleTable(table);
 
-        main.add(new JScrollPane(table), BorderLayout.CENTER);
+        main.add(UITheme.wrapTable(table), BorderLayout.CENTER);
 
         //  BUTTONS
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
@@ -68,6 +74,8 @@ public class ManageUsersFrame extends JFrame {
 
         JButton addBtn = new JButton("Add User");
         JButton deleteBtn = new JButton("Delete User");
+        UITheme.stylePrimaryButton(addBtn);
+        UITheme.styleDangerButton(deleteBtn);
 
         bottom.add(addBtn);
         bottom.add(deleteBtn);
@@ -147,10 +155,13 @@ public class ManageUsersFrame extends JFrame {
     private void addUser() {
 
         JTextField usernameField = new JTextField();
-        JTextField passwordField = new JTextField();
+        JPasswordField passwordField = new JPasswordField();
 
         String[] roles = {"admin", "employee"};
         JComboBox<String> roleBox = new JComboBox<>(roles);
+        UITheme.styleField(usernameField);
+        UITheme.styleField(passwordField);
+        UITheme.styleCombo(roleBox);
 
         Object[] fields = {
                 "Username:", usernameField,
@@ -165,18 +176,18 @@ public class ManageUsersFrame extends JFrame {
         if (option == JOptionPane.OK_OPTION) {
 
             String username = usernameField.getText().trim();
-            String password = passwordField.getText().trim();
+            String password = new String(passwordField.getPassword()).trim();
             String role = roleBox.getSelectedItem().toString();
 
-            if (username.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Invalid input");
+            if (username.isEmpty() || password.length() < 6) {
+                JOptionPane.showMessageDialog(this, "Username is required and password must be at least 6 characters.");
                 return;
             }
 
             boolean success = dao.addUser(new User(0, username, password, role));
 
             JOptionPane.showMessageDialog(this,
-                    success ? "User added" : "Failed");
+                    success ? "User added" : "Username already exists or user could not be added.");
 
             loadUsers();
         }

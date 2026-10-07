@@ -27,17 +27,17 @@ public class BillFrame extends JFrame {
         // ================= MAIN PANEL =================
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        mainPanel.setBackground(Color.WHITE);
+        UITheme.styleRoot(mainPanel);
 
         // ================= HEADER =================
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
 
         JLabel shopTitle = new JLabel("SHOP MANAGEMENT SYSTEM");
-        shopTitle.setFont(new Font("Arial", Font.BOLD, 24));
+        UITheme.styleTitle(shopTitle);
 
         JLabel invoiceLabel = new JLabel("Invoice #" + invoiceId);
-        invoiceLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        UITheme.styleSectionTitle(invoiceLabel);
 
         header.add(shopTitle, BorderLayout.WEST);
         header.add(invoiceLabel, BorderLayout.EAST);
@@ -51,10 +51,10 @@ public class BillFrame extends JFrame {
         SimpleDateFormat sdf =
                 new SimpleDateFormat("dd-MM-yyyy hh:mm a");
 
-        infoPanel.add(new JLabel("Customer: " + customer.getName()));
-        infoPanel.add(new JLabel("Phone: " + customer.getPhone()));
-        infoPanel.add(new JLabel("Email: " + customer.getEmail()));
-        infoPanel.add(new JLabel("Date: " + sdf.format(new Date())));
+        addInfoLabel(infoPanel, "Customer: " + customer.getName());
+        addInfoLabel(infoPanel, "Phone: " + customer.getPhone());
+        addInfoLabel(infoPanel, "Email: " + customer.getEmail());
+        addInfoLabel(infoPanel, "Date: " + sdf.format(new Date()));
 
         mainPanel.add(infoPanel, BorderLayout.WEST);
 
@@ -70,6 +70,7 @@ public class BillFrame extends JFrame {
                 new DefaultTableModel(columns, 0);
 
         JTable table = new JTable(model);
+        UITheme.styleTable(table);
 
         double grandTotal = 0;
 
@@ -89,7 +90,7 @@ public class BillFrame extends JFrame {
         }
 
         JScrollPane scrollPane =
-                new JScrollPane(table);
+                UITheme.wrapTable(table);
 
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -101,10 +102,12 @@ public class BillFrame extends JFrame {
                 new JLabel("Total Amount: Rs. " + grandTotal);
 
         totalLabel.setFont(
-                new Font("Arial", Font.BOLD, 20)
+                new Font("Segoe UI", Font.BOLD, 20)
         );
+        totalLabel.setForeground(UITheme.TEXT);
 
         JButton printBtn = new JButton("Print Bill");
+        UITheme.stylePrimaryButton(printBtn);
 
         footer.add(totalLabel, BorderLayout.WEST);
         footer.add(printBtn, BorderLayout.EAST);
@@ -146,5 +149,11 @@ public class BillFrame extends JFrame {
         });
 
         setVisible(true);
+    }
+
+    private void addInfoLabel(JPanel panel, String text) {
+        JLabel label = new JLabel(text);
+        UITheme.styleLabel(label);
+        panel.add(label);
     }
 }

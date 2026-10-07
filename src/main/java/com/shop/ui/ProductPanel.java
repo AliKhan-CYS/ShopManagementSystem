@@ -25,7 +25,7 @@ public class ProductPanel extends JPanel {
 
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        setBackground(Color.WHITE);
+        UITheme.styleRoot(this);
 
         // TOP PANEL (SEARCH)
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
@@ -34,8 +34,13 @@ public class ProductPanel extends JPanel {
         searchField = new JTextField(20);
         JButton searchBtn = new JButton("Search");
         JButton resetBtn = new JButton("Reset");
+        UITheme.styleField(searchField);
+        UITheme.stylePrimaryButton(searchBtn);
+        UITheme.styleButton(resetBtn);
 
-        top.add(new JLabel("Search:"));
+        JLabel searchLabel = new JLabel("Search:");
+        UITheme.styleLabel(searchLabel);
+        top.add(searchLabel);
         top.add(searchField);
         top.add(searchBtn);
         top.add(resetBtn);
@@ -52,9 +57,9 @@ public class ProductPanel extends JPanel {
         };
 
         table = new JTable(model);
-        table.setRowHeight(25);
+        UITheme.styleTable(table);
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add(UITheme.wrapTable(table), BorderLayout.CENTER);
 
         //  BUTTONS
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
@@ -63,6 +68,9 @@ public class ProductPanel extends JPanel {
         JButton addBtn = new JButton("Add");
         JButton editBtn = new JButton("Edit");
         JButton deleteBtn = new JButton("Delete");
+        UITheme.stylePrimaryButton(addBtn);
+        UITheme.styleButton(editBtn);
+        UITheme.styleDangerButton(deleteBtn);
 
         bottom.add(addBtn);
         bottom.add(editBtn);

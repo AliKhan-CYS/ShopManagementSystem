@@ -18,6 +18,7 @@ public class ReportPanel extends JPanel {
     public ReportPanel() {
         setLayout(new GridLayout(1, 3, 10, 10));
         setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        UITheme.styleRoot(this);
 
         add(createProductSalesChart());
         add(createCategorySalesChart());
@@ -41,7 +42,7 @@ public class ReportPanel extends JPanel {
                 dataset
         );
 
-        return new ChartPanel(chart);
+        return UITheme.chartPanel(chart);
     }
 
     private ChartPanel createCategorySalesChart() {
@@ -62,7 +63,7 @@ public class ReportPanel extends JPanel {
                 false
         );
 
-        return new ChartPanel(chart);
+        return UITheme.chartPanel(chart);
     }
 
     private ChartPanel createDailyRevenueChart() {
@@ -82,6 +83,6 @@ public class ReportPanel extends JPanel {
                 dataset
         );
 
-        return new ChartPanel(chart);
+        return UITheme.chartPanel(chart);
     }
 }
