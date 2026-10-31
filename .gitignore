@@ -1,4 +1,15 @@
 target/
+.build-tools/
+
+### Release output ###
+/app/
+/github-release/
+
+### Local data ###
+*.db
+*.db-journal
+*.sqbpro
+profile_photos/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
