@@ -10,8 +10,15 @@ import java.util.List;
 
 public class UserDAO {
 
+    // Timestamps are stored in UTC by CURRENT_TIMESTAMP; present them in local time.
+    private static final String USER_COLUMNS = """
+            id, username, password, role, active, profile_photo_path,
+            datetime(last_login, 'localtime') AS last_login,
+            datetime(created_at, 'localtime') AS created_at
+            """;
+
     public User login(String username, String password) {
-        String sql = "SELECT * FROM users WHERE username=?";
+        String sql = "SELECT " + USER_COLUMNS + " FROM users WHERE username=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -28,17 +35,18 @@ public class UserDAO {
                         updatePasswordHash(conn, id, storedPassword);
                     }
 
-                    updateLastLogin(conn, id);
-                    return new User(
+                    User user = new User(
                             id,
                             rs.getString("username"),
                             storedPassword,
                             rs.getString("role"),
-                            rs.getInt("active") == 1,
+                            true,
                             rs.getString("profile_photo_path"),
                             rs.getString("last_login"),
                             rs.getString("created_at")
                     );
+                    updateLastLogin(conn, id);
+                    return user;
                 }
             }
 
@@ -50,7 +58,7 @@ public class UserDAO {
     }
 
     public boolean addUser(User u) {
-        if (u == null || !isValidUsername(u.getUsername())
+        if (u == null || !User.isValidUsername(u.getUsername())
                 || !PasswordSecurity.isValidNewPassword(u.getPassword())
                 || !isSupportedRole(u.getRole())) return false;
         String sql = "INSERT INTO users(username, password, role, active) VALUES (?, ?, ?, ?)";
@@ -61,7 +69,7 @@ public class UserDAO {
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, u.getUsername());
+            stmt.setString(1, u.getUsername().trim());
             stmt.setString(2, securePassword);
             stmt.setString(3, u.getRole());
             stmt.setInt(4, u.isActive() ? 1 : 0);
@@ -69,7 +77,7 @@ public class UserDAO {
             return stmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            if (!e.getMessage().toLowerCase().contains("constraint")) {
+            if (e.getMessage() == null || !e.getMessage().toLowerCase().contains("constraint")) {
                 e.printStackTrace();
             }
         }
@@ -79,7 +87,7 @@ public class UserDAO {
 
     public List<User> getAllUsers() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT * FROM users ORDER BY username";
+        String sql = "SELECT " + USER_COLUMNS + " FROM users ORDER BY username COLLATE NOCASE";
 
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
@@ -97,7 +105,7 @@ public class UserDAO {
     }
 
     public User findByUsername(String username) {
-        String sql = "SELECT * FROM users WHERE username=?";
+        String sql = "SELECT " + USER_COLUMNS + " FROM users WHERE username=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -115,7 +123,7 @@ public class UserDAO {
     }
 
     public User findById(int id) {
-        String sql = "SELECT * FROM users WHERE id=?";
+        String sql = "SELECT " + USER_COLUMNS + " FROM users WHERE id=?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -216,7 +224,7 @@ public class UserDAO {
     }
 
     public boolean createInitialAdmin(String username, String password) {
-        if (!isValidUsername(username) || !PasswordSecurity.isValidNewPassword(password)) return false;
+        if (!User.isValidUsername(username) || !PasswordSecurity.isValidNewPassword(password)) return false;
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try (Statement check = conn.createStatement(); ResultSet rs = check.executeQuery("SELECT COUNT(*) FROM users")) {
@@ -239,10 +247,6 @@ public class UserDAO {
         } catch (SQLException e) {
             return false;
         }
-    }
-
-    private static boolean isValidUsername(String username) {
-        return username != null && username.trim().matches("[A-Za-z0-9._-]{3,32}");
     }
 
     private static boolean isSupportedRole(String role) {

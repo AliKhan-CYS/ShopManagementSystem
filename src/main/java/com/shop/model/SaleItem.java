@@ -2,9 +2,9 @@ package com.shop.model;
 
 public class SaleItem {
 
-    private int productId;
-    private int quantity;
-    private double price;
+    private final int productId;
+    private final int quantity;
+    private final double price;
 
     public SaleItem(int productId, int quantity, double price) {
         this.productId = productId;

@@ -2,6 +2,7 @@ package com.shop.dao;
 
 import com.shop.db.DBConnection;
 import com.shop.model.AccountRequest;
+import com.shop.model.User;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ import java.util.List;
 public class AccountRequestDAO {
 
     public boolean createRequest(String username, String requestType, String requestedRole, String notes) {
-        if (username == null || !username.trim().matches("[A-Za-z0-9._-]{3,32}")
+        if (!User.isValidUsername(username)
                 || (!"PASSWORD_RESET".equals(requestType) && !"NEW_ACCOUNT".equals(requestType))
                 || (notes != null && notes.length() > 1000)
                 || ("NEW_ACCOUNT".equals(requestType) && !"employee".equalsIgnoreCase(requestedRole))) return false;
@@ -18,7 +19,7 @@ public class AccountRequestDAO {
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, username);
+            stmt.setString(1, username.trim());
             stmt.setString(2, requestType);
             stmt.setString(3, requestedRole);
             stmt.setString(4, notes);
@@ -32,7 +33,13 @@ public class AccountRequestDAO {
 
     public List<AccountRequest> getAllRequests() {
         List<AccountRequest> requests = new ArrayList<>();
-        String sql = "SELECT * FROM account_requests ORDER BY CASE status WHEN 'PENDING' THEN 0 ELSE 1 END, created_at DESC";
+        String sql = """
+                SELECT id, username, request_type, requested_role, notes, status, admin_response,
+                       datetime(created_at, 'localtime') AS created_at,
+                       datetime(resolved_at, 'localtime') AS resolved_at
+                FROM account_requests
+                ORDER BY CASE status WHEN 'PENDING' THEN 0 ELSE 1 END, id DESC
+                """;
 
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();

@@ -8,8 +8,7 @@ import java.awt.*;
 
 public class MainFrame extends JFrame {
 
-    private JPanel contentPanel;
-    private JPanel headerPanel;
+    private final JPanel contentPanel;
     private JLabel avatarLabel;
     private JLabel subtitle;
     private User user;
@@ -21,6 +20,7 @@ public class MainFrame extends JFrame {
         UITheme.setup();
 
         setTitle("Shop Management System");
+        setIconImage(ShopLogo.render(64));
         setSize(1120, 700);
         setMinimumSize(new Dimension(980, 620));
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -28,8 +28,7 @@ public class MainFrame extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
 
-        headerPanel = createHeader();
-        add(headerPanel, BorderLayout.NORTH);
+        add(createHeader(), BorderLayout.NORTH);
 
         SidebarPanel sidebar = new SidebarPanel(user, this::switchPanel);
         add(sidebar, BorderLayout.WEST);
@@ -97,13 +96,16 @@ public class MainFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Administrator access is required.", "Access denied", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        if ("Manage Users".equals(name)) {
+            new ManageUsersFrame(user);
+            return;
+        }
         contentPanel.removeAll();
 
         switch (name) {
             case "Dashboard" -> contentPanel.add(new DashboardPanel(user), BorderLayout.CENTER);
             case "Profile" -> contentPanel.add(new ProfilePanel(user, this::refreshUser), BorderLayout.CENTER);
             case "Products" -> contentPanel.add(new ProductPanel(user), BorderLayout.CENTER);
-            case "Manage Users" -> new ManageUsersFrame(user);
             case "Notifications" -> contentPanel.add(new AdminNotificationsPanel(user), BorderLayout.CENTER);
             case "Customers" -> contentPanel.add(new CustomerPanel(user), BorderLayout.CENTER);
             case "Sales" -> contentPanel.add(new SalesPanel(user), BorderLayout.CENTER);

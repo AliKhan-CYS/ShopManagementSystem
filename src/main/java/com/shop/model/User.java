@@ -2,6 +2,8 @@ package com.shop.model;
 
 public class User {
 
+    private static final String USERNAME_PATTERN = "[A-Za-z0-9._-]{3,32}";
+
     private int id;
     private String username;
     private String password;
@@ -31,6 +33,10 @@ public class User {
     public String getProfilePhotoPath() { return profilePhotoPath; }
     public String getLastLogin() { return lastLogin; }
     public String getCreatedAt() { return createdAt; }
+
+    public static boolean isValidUsername(String username) {
+        return username != null && username.trim().matches(USERNAME_PATTERN);
+    }
 
     public boolean isAdmin() {
         return role != null && role.equalsIgnoreCase("admin");

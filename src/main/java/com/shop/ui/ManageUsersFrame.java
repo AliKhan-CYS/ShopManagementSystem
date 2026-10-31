@@ -159,7 +159,7 @@ public class ManageUsersFrame extends JFrame {
             String password = new String(passwordField.getPassword());
             String role = roleBox.getSelectedItem().toString();
 
-            if (!username.matches("[A-Za-z0-9._-]{3,32}") || !com.shop.service.PasswordSecurity.isValidNewPassword(password)) {
+            if (!User.isValidUsername(username) || !com.shop.service.PasswordSecurity.isValidNewPassword(password)) {
                 JOptionPane.showMessageDialog(this, "Use a valid 3–32 character username and a password of at least 12 characters.");
                 return;
             }

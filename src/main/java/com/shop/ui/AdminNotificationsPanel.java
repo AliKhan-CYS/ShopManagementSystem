@@ -147,6 +147,8 @@ public class AdminNotificationsPanel extends JPanel {
             if (userDAO.setPassword(user.getId(), password)) {
                 requestDAO.resolveRequest(request.getId(), "APPROVED", "Password reset by admin.");
                 JOptionPane.showMessageDialog(this, "Password reset. Share the temporary password securely.");
+            } else {
+                JOptionPane.showMessageDialog(this, "The password could not be reset.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

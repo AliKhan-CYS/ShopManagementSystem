@@ -4,7 +4,6 @@ import com.shop.dao.AccountRequestDAO;
 import com.shop.dao.UserDAO;
 import com.shop.model.User;
 import com.shop.service.RecoveryService;
-import com.shop.service.UserService;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -19,7 +18,6 @@ public class LoginFrame extends JFrame {
     private JLabel statusLabel;
     private JLabel roleIndicator;
     private JPanel roleBadge;
-    private final UserService userService = new UserService();
     private final UserDAO userDAO = new UserDAO();
     private final AccountRequestDAO requestDAO = new AccountRequestDAO();
     private final RecoveryService recoveryService = new RecoveryService();
@@ -70,7 +68,7 @@ public class LoginFrame extends JFrame {
                 dispose();
                 return;
             }
-            if (!username.matches("[A-Za-z0-9._-]{3,32}") || first.length < 12
+            if (!User.isValidUsername(username) || first.length < 12
                     || !java.util.Arrays.equals(first, second)) {
                 JOptionPane.showMessageDialog(this, "Enter a valid username and matching passwords of at least 12 characters.");
                 ensureInitialAdmin();
@@ -323,7 +321,7 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        User user = userService.login(username, password);
+        User user = userDAO.login(username, password);
 
         if (user != null) {
             showStatus("Opening dashboard...", false);
@@ -388,7 +386,7 @@ public class LoginFrame extends JFrame {
 
         String password = new String(newPassword.getPassword());
         String confirm = new String(confirmPassword.getPassword());
-        if (!username.getText().trim().matches("[A-Za-z0-9._-]{3,32}")
+        if (!User.isValidUsername(username.getText())
                 || !com.shop.service.PasswordSecurity.isValidNewPassword(password) || !password.equals(confirm)) {
             showStatus("Recovery reset needs a valid username and matching passwords of 12+ characters.", true);
             return;
