@@ -17,10 +17,11 @@ public class DBConnection {
     private static boolean initialized;
 
     public static Connection getConnection() {
+        Connection conn = null;
         try {
             Class.forName("org.sqlite.JDBC");
             Path database = AppPaths.databaseFile();
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + database);
+            conn = DriverManager.getConnection("jdbc:sqlite:" + database);
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("PRAGMA foreign_keys=ON");
                 stmt.execute("PRAGMA busy_timeout=5000");
@@ -33,6 +34,12 @@ public class DBConnection {
             }
             return conn;
         } catch (Exception e) {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (Exception ignored) {
+                }
+            }
             throw new IllegalStateException("Could not open the shop database", e);
         }
     }
@@ -102,9 +109,12 @@ public class DBConnection {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     phone TEXT,
-                    email TEXT
+                    email TEXT,
+                    address TEXT
                 )
             """);
+
+            addColumnIfMissing(conn, "customers", "address", "TEXT");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS sales (

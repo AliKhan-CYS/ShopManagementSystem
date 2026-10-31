@@ -8,6 +8,7 @@ import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.Plot;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
+import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -211,6 +212,10 @@ public final class UITheme {
             renderer.setSeriesPaint(0, ACCENT);
             renderer.setSeriesPaint(1, SUCCESS);
             renderer.setSeriesPaint(2, WARNING);
+            if (renderer instanceof LineAndShapeRenderer lineRenderer) {
+                // A single day of data has no line segment, so draw the points too.
+                lineRenderer.setDefaultShapesVisible(true);
+            }
         } else if (plot instanceof PiePlot piePlot) {
             piePlot.setLabelPaint(TEXT);
             piePlot.setLabelBackgroundPaint(SURFACE_ALT);

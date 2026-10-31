@@ -5,12 +5,10 @@ import com.shop.model.Sale;
 import com.shop.model.SaleItem;
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 
 public class SaleDAO {
 
-    // ================= CREATE SALE =================
     public int createSale(Sale sale, List<SaleItem> items) {
 
         if (sale == null || items == null || items.isEmpty() || sale.getCustomerId() <= 0
@@ -74,96 +72,5 @@ public class SaleDAO {
         } catch (Exception e) {
             return -1;
         }
-    }
-
-    // ================= GET ALL SALES =================
-    public List<Sale> getAllSales() {
-
-        List<Sale> list = new ArrayList<>();
-
-        String sql = "SELECT * FROM sales ORDER BY sale_date DESC";
-
-        try (
-                Connection conn = DBConnection.getConnection();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)
-        ) {
-
-            while (rs.next()) {
-
-                Sale sale = new Sale(
-                        rs.getInt("id"),
-                        rs.getInt("customer_id"),
-                        rs.getDouble("total"),
-                        rs.getTimestamp("sale_date")
-                );
-
-                // attach sale items for reporting/billing
-                sale.setSaleItems(getSaleItemsBySaleId(sale.getId()));
-
-                list.add(sale);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return list;
-    }
-
-    // ================= GET SALE ITEMS BY SALE ID =================
-    public List<SaleItem> getSaleItemsBySaleId(int saleId) {
-
-        List<SaleItem> items = new ArrayList<>();
-        String sql = "SELECT * FROM sale_items WHERE sale_id=?";
-
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, saleId);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                items.add(new SaleItem(
-                        rs.getInt("product_id"),
-                        rs.getInt("quantity"),
-                        rs.getDouble("price")
-                ));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return items;
-    }
-
-    // ================= SALES BY DATE (FOR DASHBOARD GRAPHS) =================
-    public List<Object[]> getSalesByDate() {
-
-        List<Object[]> list = new ArrayList<>();
-
-        String sql =
-                "SELECT DATE(sale_date) as sdate, SUM(total) as total " +
-                        "FROM sales GROUP BY DATE(sale_date) ORDER BY sdate";
-
-        try (
-                Connection conn = DBConnection.getConnection();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)
-        ) {
-
-            while (rs.next()) {
-                list.add(new Object[]{
-                        rs.getString("sdate"),
-                        rs.getDouble("total")
-                });
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return list;
     }
 }

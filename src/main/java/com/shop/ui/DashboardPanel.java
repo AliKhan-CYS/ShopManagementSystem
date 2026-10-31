@@ -1,9 +1,7 @@
 package com.shop.ui;
 
-import com.shop.dao.SaleDAO;
-import com.shop.model.Product;
+import com.shop.dao.ReportDAO;
 import com.shop.model.User;
-import com.shop.service.ProductService;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -12,15 +10,16 @@ import org.jfree.data.general.DefaultPieDataset;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class DashboardPanel extends JPanel {
 
-    private final ProductService service = new ProductService();
+    private final ReportDAO reports = new ReportDAO();
     private final User user;
-    private JPanel centerPanel;
+    private final JPanel centerPanel = new JPanel(new GridLayout(1, 2, 15, 15));
+    private final JLabel productCountValue = cardValueLabel();
+    private final JLabel stockValue = cardValueLabel();
+    private final JLabel salesCountValue = cardValueLabel();
+    private final JLabel revenueTodayValue = cardValueLabel();
 
     public DashboardPanel(User user) {
         this.user = user;
@@ -31,17 +30,15 @@ public class DashboardPanel extends JPanel {
 
         add(createHeader(), BorderLayout.NORTH);
 
-        centerPanel = new JPanel(new GridLayout(1, 2, 15, 15));
         centerPanel.setOpaque(false);
         add(centerPanel, BorderLayout.CENTER);
 
-        JPanel cards = new JPanel(new GridLayout(1, 3, 15, 15));
+        JPanel cards = new JPanel(new GridLayout(1, 4, 15, 15));
         cards.setOpaque(false);
-
-        cards.add(createCard("Total Products", getTotalProducts()));
-        cards.add(createCard("Total Quantity", getTotalQuantity()));
-        cards.add(createCard("Sales (Coming)", 0));
-
+        cards.add(createCard("Total Products", productCountValue));
+        cards.add(createCard("Units in Stock", stockValue));
+        cards.add(createCard("Total Sales", salesCountValue));
+        cards.add(createCard("Revenue Today", revenueTodayValue));
         add(cards, BorderLayout.SOUTH);
 
         loadDashboard();
@@ -78,92 +75,53 @@ public class DashboardPanel extends JPanel {
     }
 
     private void loadDashboard() {
+        ReportDAO.InventorySummary inventory = reports.inventorySummary();
+        ReportDAO.SalesSummary sales = reports.salesSummary();
+        productCountValue.setText(String.valueOf(inventory.productCount()));
+        stockValue.setText(String.valueOf(inventory.totalQuantity()));
+        salesCountValue.setText(String.valueOf(sales.saleCount()));
+        revenueTodayValue.setText(Money.format(sales.revenueToday()));
+
         centerPanel.removeAll();
         centerPanel.add(createCategoryChart());
         centerPanel.add(createSalesChart());
-        refreshUI();
+        centerPanel.revalidate();
+        centerPanel.repaint();
     }
 
     private ChartPanel createCategoryChart() {
-        List<Product> list = service.getAllProducts();
-        Map<String, Integer> categoryMap = new HashMap<>();
+        DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
+        reports.stockByCategory().forEach(dataset::setValue);
 
-        for (Product p : list) {
-            categoryMap.put(
-                    p.getCategory(),
-                    categoryMap.getOrDefault(p.getCategory(), 0) + p.getQuantity()
-            );
-        }
-
-        DefaultPieDataset dataset = new DefaultPieDataset();
-        for (String key : categoryMap.keySet()) {
-            dataset.setValue(key, categoryMap.get(key));
-        }
-
-        JFreeChart chart = ChartFactory.createPieChart(
-                "Products by Category",
-                dataset,
-                true,
-                true,
-                false
-        );
-
+        JFreeChart chart = ChartFactory.createPieChart("Stock by Category", dataset, true, true, false);
         return UITheme.chartPanel(chart);
     }
 
     private ChartPanel createSalesChart() {
-        SaleDAO saleDAO = new SaleDAO();
-        List<Object[]> data = saleDAO.getSalesByDate();
-
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        for (Object[] row : data) {
-            String date = (String) row[0];
-            double total = (double) row[1];
-            dataset.addValue(total, "Sales", date);
-        }
+        reports.dailyRevenue().forEach((day, revenue) -> dataset.addValue(revenue, "Sales", day));
 
-        JFreeChart chart = ChartFactory.createLineChart(
-                "Sales Report",
-                "Date",
-                "Revenue",
-                dataset
-        );
-
+        JFreeChart chart = ChartFactory.createLineChart("Sales Report", "Date", "Revenue", dataset);
         return UITheme.chartPanel(chart);
     }
 
-    private JPanel createCard(String title, int value) {
+    private static JLabel cardValueLabel() {
+        JLabel label = new JLabel("0");
+        label.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        label.setForeground(UITheme.TEXT);
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        return label;
+    }
+
+    private JPanel createCard(String title, JLabel valueLabel) {
         JPanel card = new JPanel(new BorderLayout());
         UITheme.styleCard(card);
 
         JLabel titleLabel = new JLabel(title);
         UITheme.styleMuted(titleLabel);
 
-        JLabel valueLabel = new JLabel(String.valueOf(value));
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        valueLabel.setForeground(UITheme.TEXT);
-        valueLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
         card.add(titleLabel, BorderLayout.NORTH);
         card.add(valueLabel, BorderLayout.CENTER);
-
         return card;
-    }
-
-    private int getTotalProducts() {
-        return service.getAllProducts().size();
-    }
-
-    private int getTotalQuantity() {
-        int total = 0;
-        for (Product p : service.getAllProducts()) {
-            total += p.getQuantity();
-        }
-        return total;
-    }
-
-    private void refreshUI() {
-        centerPanel.revalidate();
-        centerPanel.repaint();
     }
 }
