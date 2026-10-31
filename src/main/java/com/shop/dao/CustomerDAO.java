@@ -48,6 +48,7 @@ public class CustomerDAO {
         }
     }
 
+
     // Delete customer
     public boolean deleteCustomer(int id) {
         String sql = "DELETE FROM customers WHERE id=?";

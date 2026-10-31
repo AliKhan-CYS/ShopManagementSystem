@@ -23,13 +23,22 @@ public class UserDAO {
                     int id = rs.getInt("id");
                     String storedPassword = rs.getString("password");
 
-                    if (!PasswordSecurity.isHashed(storedPassword)) {
+                    if (PasswordSecurity.needsRehash(storedPassword)) {
                         storedPassword = PasswordSecurity.hash(password);
                         updatePasswordHash(conn, id, storedPassword);
                     }
 
                     updateLastLogin(conn, id);
-                    return findById(id);
+                    return new User(
+                            id,
+                            rs.getString("username"),
+                            storedPassword,
+                            rs.getString("role"),
+                            rs.getInt("active") == 1,
+                            rs.getString("profile_photo_path"),
+                            rs.getString("last_login"),
+                            rs.getString("created_at")
+                    );
                 }
             }
 
@@ -41,6 +50,9 @@ public class UserDAO {
     }
 
     public boolean addUser(User u) {
+        if (u == null || !isValidUsername(u.getUsername())
+                || !PasswordSecurity.isValidNewPassword(u.getPassword())
+                || !isSupportedRole(u.getRole())) return false;
         String sql = "INSERT INTO users(username, password, role, active) VALUES (?, ?, ?, ?)";
         String securePassword = PasswordSecurity.isHashed(u.getPassword())
                 ? u.getPassword()
@@ -130,6 +142,7 @@ public class UserDAO {
     }
 
     public boolean setPassword(int userId, String newPassword) {
+        if (userId <= 0 || !PasswordSecurity.isValidNewPassword(newPassword)) return false;
         String sql = "UPDATE users SET password=? WHERE id=?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -160,6 +173,10 @@ public class UserDAO {
     }
 
     public boolean setActive(int id, boolean active) {
+        if (id <= 0) return false;
+        User target = findById(id);
+        if (target == null) return false;
+        if (!active && target.isAdmin() && countActiveAdmins() <= 1) return false;
         String sql = "UPDATE users SET active=? WHERE id=?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -189,6 +206,9 @@ public class UserDAO {
     }
 
     public boolean deleteUser(int id) {
+        if (id <= 0) return false;
+        User target = findById(id);
+        if (target == null || (target.isAdmin() && countActiveAdmins() <= 1)) return false;
         String sql = "DELETE FROM users WHERE id=?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -202,6 +222,50 @@ public class UserDAO {
         }
 
         return false;
+    }
+
+    public long countUsers() {
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM users")) {
+            return rs.next() ? rs.getLong(1) : 0;
+        } catch (SQLException e) {
+            return -1;
+        }
+    }
+
+    public boolean createInitialAdmin(String username, String password) {
+        if (!isValidUsername(username) || !PasswordSecurity.isValidNewPassword(password)) return false;
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try (Statement check = conn.createStatement(); ResultSet rs = check.executeQuery("SELECT COUNT(*) FROM users")) {
+                if (!rs.next() || rs.getLong(1) != 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+            try (PreparedStatement insert = conn.prepareStatement(
+                    "INSERT INTO users(username,password,role,active) VALUES(?,?, 'admin',1)")) {
+                insert.setString(1, username.trim());
+                insert.setString(2, PasswordSecurity.hash(password));
+                boolean created = insert.executeUpdate() == 1;
+                conn.commit();
+                return created;
+            } catch (SQLException e) {
+                conn.rollback();
+                return false;
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private static boolean isValidUsername(String username) {
+        return username != null && username.trim().matches("[A-Za-z0-9._-]{3,32}");
+    }
+
+    private static boolean isSupportedRole(String role) {
+        return "admin".equalsIgnoreCase(role) || "employee".equalsIgnoreCase(role);
     }
 
     private void updatePasswordHash(Connection conn, int id, String passwordHash) throws SQLException {

@@ -25,6 +25,7 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(980, 620));
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLayout(new BorderLayout());
 
         headerPanel = createHeader();
@@ -84,6 +85,18 @@ public class MainFrame extends JFrame {
     }
 
     private void switchPanel(String name) {
+        User latest = userDAO.findById(user.getId());
+        if (latest == null || !latest.isActive()) {
+            JOptionPane.showMessageDialog(this, "This account is no longer active. Please sign in again.", "Session ended", JOptionPane.WARNING_MESSAGE);
+            new LoginFrame();
+            dispose();
+            return;
+        }
+        user = latest;
+        if (("Manage Users".equals(name) || "Notifications".equals(name)) && !user.isAdmin()) {
+            JOptionPane.showMessageDialog(this, "Administrator access is required.", "Access denied", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         contentPanel.removeAll();
 
         switch (name) {
@@ -91,7 +104,7 @@ public class MainFrame extends JFrame {
             case "Profile" -> contentPanel.add(new ProfilePanel(user, this::refreshUser), BorderLayout.CENTER);
             case "Products" -> contentPanel.add(new ProductPanel(user), BorderLayout.CENTER);
             case "Manage Users" -> new ManageUsersFrame(user);
-            case "Notifications" -> contentPanel.add(new AdminNotificationsPanel(), BorderLayout.CENTER);
+            case "Notifications" -> contentPanel.add(new AdminNotificationsPanel(user), BorderLayout.CENTER);
             case "Customers" -> contentPanel.add(new CustomerPanel(user), BorderLayout.CENTER);
             case "Sales" -> contentPanel.add(new SalesPanel(user), BorderLayout.CENTER);
             case "Reports" -> contentPanel.add(new ReportPanel(), BorderLayout.CENTER);

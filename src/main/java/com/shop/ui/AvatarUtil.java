@@ -2,10 +2,12 @@ package com.shop.ui;
 
 import com.shop.model.User;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.nio.file.Path;
 
 public final class AvatarUtil {
 
@@ -14,10 +16,17 @@ public final class AvatarUtil {
 
     public static ImageIcon avatarFor(User user, int size) {
         if (user != null && user.getProfilePhotoPath() != null && !user.getProfilePhotoPath().isBlank()) {
-            File file = new File(user.getProfilePhotoPath());
-            if (file.exists()) {
-                Image image = new ImageIcon(file.getAbsolutePath()).getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
-                return new ImageIcon(image);
+            try {
+                Path photo = Path.of(user.getProfilePhotoPath()).toAbsolutePath().normalize();
+                Path approvedDirectory = com.shop.AppPaths.profilePhotoDirectory().toAbsolutePath().normalize();
+                if (photo.startsWith(approvedDirectory)) {
+                    File file = photo.toFile();
+                    if (file.isFile() && file.length() <= 10L * 1024 * 1024) {
+                        ImageIcon icon = circularPhoto(file, size);
+                        if (icon != null) return icon;
+                    }
+                }
+            } catch (Exception ignored) {
             }
         }
 
@@ -36,6 +45,34 @@ public final class AvatarUtil {
         g.dispose();
 
         return new ImageIcon(image);
+    }
+
+    private static ImageIcon circularPhoto(File file, int size) {
+        try {
+            BufferedImage source = ImageIO.read(file);
+            if (source == null || source.getWidth() <= 0 || source.getHeight() <= 0
+                    || source.getWidth() > 6000 || source.getHeight() > 6000
+                    || (long) source.getWidth() * source.getHeight() > 20_000_000L) {
+                return null;
+            }
+
+            int sourceSize = Math.min(source.getWidth(), source.getHeight());
+            int x = (source.getWidth() - sourceSize) / 2;
+            int y = (source.getHeight() - sourceSize) / 2;
+            BufferedImage cropped = source.getSubimage(x, y, sourceSize, sourceSize);
+
+            BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = image.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g.setClip(new java.awt.geom.Ellipse2D.Double(0, 0, size, size));
+            g.drawImage(cropped, 0, 0, size, size, null);
+            g.dispose();
+            return new ImageIcon(image);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     private static String initials(String username) {

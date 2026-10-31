@@ -29,27 +29,12 @@ public class DashboardPanel extends JPanel {
         UITheme.styleRoot(this);
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // ================= HEADER =================
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
+        add(createHeader(), BorderLayout.NORTH);
 
-        JLabel welcome = new JLabel("Dashboard");
-        UITheme.styleTitle(welcome);
-
-        JButton refreshBtn = new JButton("Refresh");
-        UITheme.stylePrimaryButton(refreshBtn);
-
-        header.add(welcome, BorderLayout.WEST);
-        header.add(refreshBtn, BorderLayout.EAST);
-
-        add(header, BorderLayout.NORTH);
-
-        // ================= CENTER =================
         centerPanel = new JPanel(new GridLayout(1, 2, 15, 15));
         centerPanel.setOpaque(false);
         add(centerPanel, BorderLayout.CENTER);
 
-        // ================= CARDS =================
         JPanel cards = new JPanel(new GridLayout(1, 3, 15, 15));
         cards.setOpaque(false);
 
@@ -60,24 +45,45 @@ public class DashboardPanel extends JPanel {
         add(cards, BorderLayout.SOUTH);
 
         loadDashboard();
-
-        refreshBtn.addActionListener(e -> loadDashboard());
     }
 
-    // ================= LOAD DASHBOARD =================
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout(12, 0));
+        header.setOpaque(false);
+
+        JPanel profile = new JPanel(new BorderLayout(12, 0));
+        profile.setOpaque(false);
+        profile.add(new JLabel(AvatarUtil.avatarFor(user, 56)), BorderLayout.WEST);
+
+        JPanel text = new JPanel();
+        text.setOpaque(false);
+        text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
+
+        JLabel welcome = new JLabel("Welcome, " + user.getUsername());
+        UITheme.styleTitle(welcome);
+        JLabel subtitle = new JLabel(user.getRole() + " dashboard");
+        UITheme.styleMuted(subtitle);
+        text.add(welcome);
+        text.add(Box.createRigidArea(new Dimension(0, 4)));
+        text.add(subtitle);
+        profile.add(text, BorderLayout.CENTER);
+
+        JButton refreshBtn = new JButton("Refresh");
+        UITheme.stylePrimaryButton(refreshBtn);
+        refreshBtn.addActionListener(e -> loadDashboard());
+
+        header.add(profile, BorderLayout.WEST);
+        header.add(refreshBtn, BorderLayout.EAST);
+        return header;
+    }
+
     private void loadDashboard() {
         centerPanel.removeAll();
-
-        // LEFT → product category chart
         centerPanel.add(createCategoryChart());
-
-        // RIGHT → sales by date chart
         centerPanel.add(createSalesChart());
-
         refreshUI();
     }
 
-    // ================= CATEGORY CHART =================
     private ChartPanel createCategoryChart() {
         List<Product> list = service.getAllProducts();
         Map<String, Integer> categoryMap = new HashMap<>();
@@ -105,7 +111,6 @@ public class DashboardPanel extends JPanel {
         return UITheme.chartPanel(chart);
     }
 
-    // ================= SALES CHART =================
     private ChartPanel createSalesChart() {
         SaleDAO saleDAO = new SaleDAO();
         List<Object[]> data = saleDAO.getSalesByDate();
@@ -127,10 +132,8 @@ public class DashboardPanel extends JPanel {
         return UITheme.chartPanel(chart);
     }
 
-    // ================= CARD =================
     private JPanel createCard(String title, int value) {
         JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(new Color(245, 247, 250));
         UITheme.styleCard(card);
 
         JLabel titleLabel = new JLabel(title);
@@ -147,7 +150,6 @@ public class DashboardPanel extends JPanel {
         return card;
     }
 
-    // ================= CALCULATIONS =================
     private int getTotalProducts() {
         return service.getAllProducts().size();
     }

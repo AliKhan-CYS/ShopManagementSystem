@@ -10,6 +10,10 @@ import java.util.List;
 public class AccountRequestDAO {
 
     public boolean createRequest(String username, String requestType, String requestedRole, String notes) {
+        if (username == null || !username.trim().matches("[A-Za-z0-9._-]{3,32}")
+                || (!"PASSWORD_RESET".equals(requestType) && !"NEW_ACCOUNT".equals(requestType))
+                || (notes != null && notes.length() > 1000)
+                || ("NEW_ACCOUNT".equals(requestType) && !"employee".equalsIgnoreCase(requestedRole))) return false;
         String sql = "INSERT INTO account_requests(username, request_type, requested_role, notes, status) VALUES (?, ?, ?, ?, 'PENDING')";
 
         try (Connection conn = DBConnection.getConnection();
@@ -58,7 +62,9 @@ public class AccountRequestDAO {
     }
 
     public boolean resolveRequest(int id, String status, String adminResponse) {
-        String sql = "UPDATE account_requests SET status=?, admin_response=?, resolved_at=CURRENT_TIMESTAMP WHERE id=?";
+        if (id <= 0 || (!"APPROVED".equals(status) && !"REJECTED".equals(status))
+                || (adminResponse != null && adminResponse.length() > 1000)) return false;
+        String sql = "UPDATE account_requests SET status=?, admin_response=?, resolved_at=CURRENT_TIMESTAMP WHERE id=? AND status='PENDING'";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {

@@ -4,9 +4,19 @@ import com.shop.dao.UserDAO;
 import com.shop.model.User;
 import com.shop.service.RecoveryService;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FilenameFilter;
+import java.util.Iterator;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public class ProfilePanel extends JPanel {
 
@@ -19,8 +29,11 @@ public class ProfilePanel extends JPanel {
     private JLabel usernameValue;
     private JLabel roleValue;
     private JLabel statusValue;
+    private JLabel statusDetailValue;
+    private JPanel statusBadge;
     private JLabel lastLoginValue;
     private JLabel createdValue;
+    private JLabel photoPathValue;
 
     public ProfilePanel(User user, Runnable onProfileUpdated) {
         this.user = user;
@@ -36,18 +49,22 @@ public class ProfilePanel extends JPanel {
     }
 
     private JPanel createHeader() {
-        JPanel header = new JPanel();
+        JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
-        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+
+        JPanel text = new JPanel();
+        text.setOpaque(false);
+        text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 
         JLabel title = new JLabel("Profile");
         UITheme.styleTitle(title);
-        JLabel subtitle = new JLabel("Account details, profile photo, and password settings.");
+        JLabel subtitle = new JLabel("Account identity, sign-in details, and security settings.");
         UITheme.styleMuted(subtitle);
 
-        header.add(title);
-        header.add(Box.createRigidArea(new Dimension(0, 6)));
-        header.add(subtitle);
+        text.add(title);
+        text.add(Box.createRigidArea(new Dimension(0, 6)));
+        text.add(subtitle);
+        header.add(text, BorderLayout.WEST);
         return header;
     }
 
@@ -57,39 +74,57 @@ public class ProfilePanel extends JPanel {
 
         JPanel identity = new JPanel();
         identity.setLayout(new BoxLayout(identity, BoxLayout.Y_AXIS));
-        UITheme.styleCard(identity);
-        identity.setPreferredSize(new Dimension(260, 0));
+        UITheme.styleElevatedCard(identity);
+        identity.setPreferredSize(new Dimension(300, 0));
 
         avatarLabel = new JLabel();
         avatarLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         usernameValue = new JLabel();
         usernameValue.setAlignmentX(Component.CENTER_ALIGNMENT);
-        UITheme.styleSectionTitle(usernameValue);
+        usernameValue.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        usernameValue.setForeground(UITheme.TEXT);
 
         roleValue = new JLabel();
         roleValue.setAlignmentX(Component.CENTER_ALIGNMENT);
         UITheme.styleMuted(roleValue);
 
-        JButton photoBtn = new JButton("Choose Photo");
+        statusValue = new JLabel();
+        statusValue.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        statusBadge = UITheme.createStatusBadge(statusValue, UITheme.SUCCESS, new Color(20, 83, 45));
+        statusBadge.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        photoPathValue = new JLabel(" ");
+        photoPathValue.setAlignmentX(Component.CENTER_ALIGNMENT);
+        photoPathValue.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        photoPathValue.setForeground(UITheme.MUTED_TEXT);
+
+        JButton photoBtn = new JButton("Upload Profile Photo");
         UITheme.stylePrimaryButton(photoBtn);
         photoBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         photoBtn.addActionListener(e -> choosePhoto());
 
         identity.add(avatarLabel);
-        identity.add(Box.createRigidArea(new Dimension(0, 16)));
+        identity.add(Box.createRigidArea(new Dimension(0, 18)));
         identity.add(usernameValue);
-        identity.add(Box.createRigidArea(new Dimension(0, 4)));
+        identity.add(Box.createRigidArea(new Dimension(0, 5)));
         identity.add(roleValue);
-        identity.add(Box.createRigidArea(new Dimension(0, 20)));
+        identity.add(Box.createRigidArea(new Dimension(0, 14)));
+        identity.add(statusBadge);
+        identity.add(Box.createRigidArea(new Dimension(0, 22)));
         identity.add(photoBtn);
+        identity.add(Box.createRigidArea(new Dimension(0, 12)));
+        identity.add(photoPathValue);
 
         JPanel details = new JPanel(new GridLayout(0, 1, 0, 12));
-        UITheme.styleCard(details);
+        UITheme.styleElevatedCard(details);
 
-        statusValue = addInfoRow(details, "Account status");
-        lastLoginValue = addInfoRow(details, "Last login");
-        createdValue = addInfoRow(details, "Created at");
+        statusDetailValue = createValueLabel();
+        details.add(createInfoCard("Account status", statusDetailValue, "Green means active, red means inactive."));
+        lastLoginValue = createValueLabel();
+        details.add(createInfoCard("Last login", lastLoginValue, "Updated after successful sign in."));
+        createdValue = createValueLabel();
+        details.add(createInfoCard("Created at", createdValue, "Original account creation timestamp."));
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         actions.setOpaque(false);
@@ -116,17 +151,37 @@ public class ProfilePanel extends JPanel {
         return content;
     }
 
-    private JLabel addInfoRow(JPanel parent, String labelText) {
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(false);
-        JLabel label = new JLabel(labelText);
-        UITheme.styleMuted(label);
-        JLabel value = new JLabel();
-        UITheme.styleLabel(value);
-        row.add(label, BorderLayout.WEST);
+    private JPanel createInfoCard(String titleText, JLabel value, String hint) {
+        JPanel row = new JPanel(new BorderLayout(16, 0));
+        row.setOpaque(true);
+        row.setBackground(UITheme.SURFACE_ALT);
+        row.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(71, 85, 105)),
+                BorderFactory.createEmptyBorder(13, 14, 13, 14)
+        ));
+
+        JPanel copy = new JPanel();
+        copy.setOpaque(false);
+        copy.setLayout(new BoxLayout(copy, BoxLayout.Y_AXIS));
+        JLabel title = new JLabel(titleText);
+        UITheme.styleLabel(title);
+        JLabel helper = new JLabel(hint);
+        helper.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        helper.setForeground(UITheme.MUTED_TEXT);
+        copy.add(title);
+        copy.add(Box.createRigidArea(new Dimension(0, 4)));
+        copy.add(helper);
+
+        row.add(copy, BorderLayout.WEST);
         row.add(value, BorderLayout.EAST);
-        parent.add(row);
-        return value;
+        return row;
+    }
+
+    private JLabel createValueLabel() {
+        JLabel label = new JLabel();
+        label.setForeground(UITheme.TEXT);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        return label;
     }
 
     private void refreshUser() {
@@ -135,12 +190,25 @@ public class ProfilePanel extends JPanel {
             user = latest;
         }
 
-        avatarLabel.setIcon(AvatarUtil.avatarFor(user, 112));
+        avatarLabel.setIcon(AvatarUtil.avatarFor(user, 132));
         usernameValue.setText(user.getUsername());
-        roleValue.setText(user.getRole());
-        statusValue.setText(user.isActive() ? "Active" : "Inactive");
+        roleValue.setText(user.getRole().toUpperCase(Locale.ROOT));
+        applyStatusBadge(user.isActive());
         lastLoginValue.setText(valueOrDash(user.getLastLogin()));
         createdValue.setText(valueOrDash(user.getCreatedAt()));
+        photoPathValue.setText(user.getProfilePhotoPath() == null || user.getProfilePhotoPath().isBlank()
+                ? "No photo uploaded"
+                : "High-quality photo saved");
+    }
+
+    private void applyStatusBadge(boolean active) {
+        String text = active ? "ACTIVE" : "INACTIVE";
+        statusValue.setText(text);
+        statusValue.setForeground(active ? UITheme.SUCCESS : UITheme.DANGER);
+        statusDetailValue.setText(text);
+        statusDetailValue.setForeground(active ? UITheme.SUCCESS : UITheme.DANGER);
+        statusBadge.setBackground(active ? new Color(20, 83, 45) : new Color(127, 29, 29));
+        statusBadge.repaint();
     }
 
     private String valueOrDash(String value) {
@@ -148,16 +216,89 @@ public class ProfilePanel extends JPanel {
     }
 
     private void choosePhoto() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Choose profile photo");
-        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File selected = chooser.getSelectedFile();
-            if (userDAO.updateProfilePhoto(userId, selected.getAbsolutePath())) {
+        File selected = openNativeImagePicker();
+        if (selected == null) {
+            return;
+        }
+
+        if (!isSupportedImage(selected)) {
+            JOptionPane.showMessageDialog(this, "Choose a valid JPG, PNG, or GIF image.");
+            return;
+        }
+
+        try {
+            File stored = storeOriginalPhoto(selected);
+            if (userDAO.updateProfilePhoto(userId, stored.getAbsolutePath())) {
                 refreshUser();
                 onProfileUpdated.run();
-                JOptionPane.showMessageDialog(this, "Profile photo updated.");
+                JOptionPane.showMessageDialog(this, "Profile photo uploaded in original quality.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Could not update profile photo.");
             }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Could not save profile photo: " + ex.getMessage());
         }
+    }
+
+    private File openNativeImagePicker() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        Frame owner = window instanceof Frame frame ? frame : null;
+        FileDialog dialog = new FileDialog(owner, "Upload profile photo", FileDialog.LOAD);
+        dialog.setFilenameFilter(imageFilter());
+        dialog.setVisible(true);
+        if (dialog.getFile() == null) {
+            return null;
+        }
+        return new File(dialog.getDirectory(), dialog.getFile());
+    }
+
+    private FilenameFilter imageFilter() {
+        return (dir, name) -> {
+            String lower = name.toLowerCase(Locale.ROOT);
+            return lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".gif");
+        };
+    }
+
+    private boolean isSupportedImage(File file) {
+        try (var input = ImageIO.createImageInputStream(file)) {
+            if (file.length() > 10L * 1024 * 1024 || input == null) return false;
+            Iterator<javax.imageio.ImageReader> readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) return false;
+            javax.imageio.ImageReader reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width <= 0 || height <= 0 || width > 6000 || height > 6000
+                        || (long) width * height > 20_000_000L) return false;
+                BufferedImage image = reader.read(0);
+                return image != null;
+            } finally {
+                reader.dispose();
+            }
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private File storeOriginalPhoto(File selected) throws Exception {
+        if (Files.size(selected.toPath()) > 10L * 1024 * 1024) {
+            throw new IllegalArgumentException("Image must be 10 MB or smaller.");
+        }
+        Path directory = com.shop.AppPaths.profilePhotoDirectory();
+        String extension = extensionOf(selected.getName());
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        Path destination = Files.createTempFile(directory, "user-" + userId + "-" + timestamp + "-", extension);
+        Files.copy(selected.toPath(), destination, StandardCopyOption.REPLACE_EXISTING);
+        return destination.toFile();
+    }
+
+    private String extensionOf(String name) {
+        int dot = name.lastIndexOf('.');
+        if (dot == -1 || dot == name.length() - 1) {
+            return ".jpg";
+        }
+        return name.substring(dot).toLowerCase(Locale.ROOT);
     }
 
     private void changePassword() {
@@ -177,8 +318,9 @@ public class ProfilePanel extends JPanel {
         int option = JOptionPane.showConfirmDialog(this, fields, "Change Password", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
             String newPassword = new String(next.getPassword());
-            if (newPassword.length() < 6 || !newPassword.equals(new String(confirm.getPassword()))) {
-                JOptionPane.showMessageDialog(this, "New passwords must match and be at least 6 characters.");
+            if (!com.shop.service.PasswordSecurity.isValidNewPassword(newPassword)
+                    || !newPassword.equals(new String(confirm.getPassword()))) {
+                JOptionPane.showMessageDialog(this, "New passwords must match and be at least 12 characters.");
                 return;
             }
 

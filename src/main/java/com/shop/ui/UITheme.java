@@ -16,21 +16,23 @@ import java.awt.*;
 
 public final class UITheme {
 
-    public static final Color BACKGROUND = new Color(15, 23, 42);
-    public static final Color SURFACE = new Color(24, 34, 54);
-    public static final Color SURFACE_ALT = new Color(30, 41, 64);
-    public static final Color BORDER = new Color(51, 65, 85);
-    public static final Color TEXT = new Color(226, 232, 240);
+    public static final Color BACKGROUND = new Color(10, 15, 25);
+    public static final Color SURFACE = new Color(18, 27, 43);
+    public static final Color SURFACE_ALT = new Color(25, 37, 58);
+    public static final Color SURFACE_ELEVATED = new Color(22, 32, 50);
+    public static final Color BORDER = new Color(54, 68, 90);
+    public static final Color TEXT = new Color(241, 245, 249);
     public static final Color MUTED_TEXT = new Color(148, 163, 184);
-    public static final Color ACCENT = new Color(59, 130, 246);
-    public static final Color ACCENT_HOVER = new Color(37, 99, 235);
-    public static final Color DANGER = new Color(239, 68, 68);
+    public static final Color ACCENT = new Color(14, 165, 233);
+    public static final Color ACCENT_SOFT = new Color(125, 211, 252);
+    public static final Color ACCENT_HOVER = new Color(2, 132, 199);
+    public static final Color DANGER = new Color(248, 113, 113);
     public static final Color DANGER_HOVER = new Color(220, 38, 38);
-    public static final Color SUCCESS = new Color(34, 197, 94);
-    public static final Color WARNING = new Color(245, 158, 11);
+    public static final Color SUCCESS = new Color(74, 222, 128);
+    public static final Color WARNING = new Color(251, 191, 36);
 
     private static final Font BASE_FONT = new Font("Segoe UI", Font.PLAIN, 13);
-    private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 22);
+    private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 24);
     private static final Font SECTION_FONT = new Font("Segoe UI", Font.BOLD, 16);
 
     private UITheme() {
@@ -39,12 +41,14 @@ public final class UITheme {
     public static void setup() {
         FlatDarkLaf.setup();
         UIManager.put("defaultFont", BASE_FONT);
-        UIManager.put("Button.arc", 10);
-        UIManager.put("Component.arc", 10);
-        UIManager.put("TextComponent.arc", 8);
+        UIManager.put("Button.arc", 14);
+        UIManager.put("Component.arc", 12);
+        UIManager.put("TextComponent.arc", 12);
+        UIManager.put("ScrollBar.thumbArc", 999);
+        UIManager.put("ScrollBar.width", 11);
         UIManager.put("Table.showHorizontalLines", true);
         UIManager.put("Table.showVerticalLines", false);
-        UIManager.put("Table.selectionBackground", new Color(37, 99, 235));
+        UIManager.put("Table.selectionBackground", ACCENT_HOVER);
         UIManager.put("Table.selectionForeground", Color.WHITE);
         UIManager.put("OptionPane.background", SURFACE);
         UIManager.put("Panel.background", BACKGROUND);
@@ -57,7 +61,7 @@ public final class UITheme {
     public static Border surfaceBorder() {
         return BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)
+                BorderFactory.createEmptyBorder(14, 16, 14, 16)
         );
     }
 
@@ -80,6 +84,28 @@ public final class UITheme {
         panel.setBackground(SURFACE);
         panel.setForeground(TEXT);
         panel.setBorder(surfaceBorder());
+    }
+
+    public static void styleElevatedCard(JPanel panel) {
+        panel.setBackground(SURFACE_ELEVATED);
+        panel.setForeground(TEXT);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(71, 85, 105)),
+                BorderFactory.createEmptyBorder(24, 26, 24, 26)
+        ));
+    }
+
+    public static JPanel createStatusBadge(JLabel label, Color foreground, Color background) {
+        JPanel badge = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        badge.setOpaque(true);
+        badge.setBackground(background);
+        badge.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 28)),
+                BorderFactory.createEmptyBorder(6, 10, 6, 10)
+        ));
+        label.setForeground(foreground);
+        badge.add(label);
+        return badge;
     }
 
     public static void styleTitle(JLabel label) {
@@ -106,8 +132,8 @@ public final class UITheme {
         field.setForeground(TEXT);
         field.setCaretColor(TEXT);
         field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                BorderFactory.createLineBorder(new Color(71, 85, 105)),
+                BorderFactory.createEmptyBorder(10, 12, 10, 12)
         ));
     }
 
@@ -122,8 +148,8 @@ public final class UITheme {
         button.setForeground(TEXT);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(BORDER),
-                BorderFactory.createEmptyBorder(8, 14, 8, 14)
+                BorderFactory.createLineBorder(new Color(71, 85, 105)),
+                BorderFactory.createEmptyBorder(9, 15, 9, 15)
         ));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
@@ -137,20 +163,21 @@ public final class UITheme {
 
     public static void styleDangerButton(JButton button) {
         styleButton(button);
-        button.setBackground(DANGER);
+        button.setBackground(DANGER_HOVER);
         button.setForeground(Color.WHITE);
-        addHover(button, DANGER, DANGER_HOVER);
+        addHover(button, DANGER_HOVER, new Color(185, 28, 28));
     }
 
     public static void styleTable(JTable table) {
         table.setBackground(SURFACE);
         table.setForeground(TEXT);
         table.setGridColor(BORDER);
-        table.setSelectionBackground(ACCENT);
+        table.setSelectionBackground(ACCENT_HOVER);
         table.setSelectionForeground(Color.WHITE);
-        table.setRowHeight(30);
+        table.setRowHeight(34);
         table.setShowVerticalLines(false);
         table.setFillsViewportHeight(true);
+        table.setIntercellSpacing(new Dimension(0, 1));
 
         JTableHeader header = table.getTableHeader();
         header.setBackground(SURFACE_ALT);

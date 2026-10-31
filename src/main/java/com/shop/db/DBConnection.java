@@ -1,7 +1,9 @@
 package com.shop.db;
 
 import com.shop.service.PasswordSecurity;
+import com.shop.AppPaths;
 
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,20 +14,27 @@ import java.util.List;
 
 public class DBConnection {
 
-    private static Connection conn;
+    private static boolean initialized;
 
     public static Connection getConnection() {
         try {
-            if (conn == null || conn.isClosed()) {
-                String url = "jdbc:sqlite:" + System.getProperty("user.dir") + "/shop.db";
-                conn = DriverManager.getConnection(url);
-                initializeDatabase(conn);
+            Class.forName("org.sqlite.JDBC");
+            Path database = AppPaths.databaseFile();
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + database);
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys=ON");
+                stmt.execute("PRAGMA busy_timeout=5000");
             }
+            synchronized (DBConnection.class) {
+                if (!initialized) {
+                    initializeDatabase(conn);
+                    initialized = true;
+                }
+            }
+            return conn;
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Could not open the shop database", e);
         }
-
-        return conn;
     }
 
     private static void initializeDatabase(Connection conn) {
@@ -33,10 +42,10 @@ public class DBConnection {
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE,
-                    password TEXT,
-                    role TEXT,
-                    active INTEGER DEFAULT 1,
+                    username TEXT NOT NULL UNIQUE CHECK(length(username) BETWEEN 3 AND 32),
+                    password TEXT NOT NULL,
+                    role TEXT NOT NULL CHECK(lower(role) IN ('admin','employee')),
+                    active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
                     profile_photo_path TEXT,
                     last_login TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -46,7 +55,8 @@ public class DBConnection {
             addColumnIfMissing(conn, "users", "active", "INTEGER DEFAULT 1");
             addColumnIfMissing(conn, "users", "profile_photo_path", "TEXT");
             addColumnIfMissing(conn, "users", "last_login", "TIMESTAMP");
-            addColumnIfMissing(conn, "users", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfMissing(conn, "users", "created_at", "TIMESTAMP");
+            stmt.execute("UPDATE users SET created_at=CURRENT_TIMESTAMP WHERE created_at IS NULL");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS account_requests (
@@ -68,26 +78,29 @@ public class DBConnection {
                     user_id INTEGER NOT NULL,
                     token_hash TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP,
                     used_at TIMESTAMP,
                     active INTEGER DEFAULT 1,
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 )
             """);
 
+            addColumnIfMissing(conn, "admin_recovery_tokens", "expires_at", "TIMESTAMP");
+
             stmt.execute("""
-                CREATE TABLE IF NOT EXISTS products (
+            CREATE TABLE IF NOT EXISTS products (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT,
-                    price REAL,
-                    quantity INTEGER,
-                    category TEXT
+                    name TEXT NOT NULL,
+                    price REAL NOT NULL CHECK(price >= 0),
+                    quantity INTEGER NOT NULL CHECK(quantity >= 0),
+                    category TEXT NOT NULL
                 )
             """);
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS customers (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT,
+                    name TEXT NOT NULL,
                     phone TEXT,
                     email TEXT
                 )
@@ -96,8 +109,8 @@ public class DBConnection {
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS sales (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    customer_id INTEGER,
-                    total REAL,
+                    customer_id INTEGER REFERENCES customers(id),
+                    total REAL NOT NULL CHECK(total >= 0),
                     sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """);
@@ -105,16 +118,16 @@ public class DBConnection {
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS sale_items (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    sale_id INTEGER,
-                    product_id INTEGER,
-                    quantity INTEGER,
-                    price REAL
+                    sale_id INTEGER NOT NULL REFERENCES sales(id),
+                    product_id INTEGER NOT NULL REFERENCES products(id),
+                    quantity INTEGER NOT NULL CHECK(quantity > 0),
+                    price REAL NOT NULL CHECK(price >= 0)
                 )
             """);
 
             migratePlainTextPasswords(conn);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Could not initialize the shop database", e);
         }
     }
 

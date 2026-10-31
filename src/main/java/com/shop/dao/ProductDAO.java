@@ -10,6 +10,7 @@ import java.util.List;
 public class ProductDAO {
 
     public boolean addProduct(Product p) {
+        if (!validProduct(p)) return false;
 
         String sql = "INSERT INTO products(name, price, quantity, category) VALUES (?, ?, ?, ?)";
 
@@ -57,6 +58,7 @@ public class ProductDAO {
     }
 
     public boolean updateProduct(Product p) {
+        if (p == null || p.getId() <= 0 || !validProduct(p)) return false;
 
         String sql = "UPDATE products SET name=?, price=?, quantity=?, category=? WHERE id=?";
 
@@ -76,6 +78,12 @@ public class ProductDAO {
         }
 
         return false;
+    }
+
+    private boolean validProduct(Product p) {
+        return p != null && p.getName() != null && !p.getName().isBlank() && p.getName().length() <= 120
+                && p.getCategory() != null && !p.getCategory().isBlank() && p.getCategory().length() <= 80
+                && Double.isFinite(p.getPrice()) && p.getPrice() >= 0 && p.getQuantity() >= 0;
     }
 
     public boolean deleteProduct(int id) {

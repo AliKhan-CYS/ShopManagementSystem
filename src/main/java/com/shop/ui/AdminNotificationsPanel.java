@@ -20,7 +20,10 @@ public class AdminNotificationsPanel extends JPanel {
     private DefaultTableModel model;
     private List<AccountRequest> requests;
 
-    public AdminNotificationsPanel() {
+    public AdminNotificationsPanel(User currentUser) {
+        if (currentUser == null || !currentUser.isAdmin()) {
+            throw new SecurityException("Administrator access is required");
+        }
         setLayout(new BorderLayout(0, 14));
         UITheme.styleRoot(this);
 
@@ -103,8 +106,8 @@ public class AdminNotificationsPanel extends JPanel {
         int option = JOptionPane.showConfirmDialog(this, fields, "Approve New Account", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
             String password = new String(passwordField.getPassword());
-            if (password.length() < 6) {
-                JOptionPane.showMessageDialog(this, "Password must be at least 6 characters.");
+            if (!com.shop.service.PasswordSecurity.isValidNewPassword(password)) {
+                JOptionPane.showMessageDialog(this, "Password must be at least 12 characters.");
                 return;
             }
 
@@ -136,8 +139,8 @@ public class AdminNotificationsPanel extends JPanel {
         int option = JOptionPane.showConfirmDialog(this, fields, "Approve Password Reset", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
             String password = new String(passwordField.getPassword());
-            if (password.length() < 6) {
-                JOptionPane.showMessageDialog(this, "Password must be at least 6 characters.");
+            if (!com.shop.service.PasswordSecurity.isValidNewPassword(password)) {
+                JOptionPane.showMessageDialog(this, "Password must be at least 12 characters.");
                 return;
             }
 

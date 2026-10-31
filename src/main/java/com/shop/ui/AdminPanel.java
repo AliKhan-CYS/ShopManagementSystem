@@ -14,7 +14,10 @@ public class AdminPanel extends JFrame {
     private DefaultTableModel model;
     private UserDAO dao = new UserDAO();
 
-    public AdminPanel() {
+    public AdminPanel(User currentUser) {
+        if (currentUser == null || !currentUser.isAdmin()) {
+            throw new SecurityException("Administrator access is required");
+        }
 
         setTitle("Manage Users");
         setSize(600, 400);
@@ -85,7 +88,7 @@ public class AdminPanel extends JFrame {
             boolean success = dao.addUser(
                     new User(0,
                             username.getText(),
-                            new String(password.getPassword()).trim(),
+                            new String(password.getPassword()),
                             roleBox.getSelectedItem().toString()
                     )
             );

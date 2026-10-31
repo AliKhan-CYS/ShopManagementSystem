@@ -18,6 +18,7 @@ public class LoginFrame extends JFrame {
     private JPasswordField passwordField;
     private JLabel statusLabel;
     private JLabel roleIndicator;
+    private JPanel roleBadge;
     private final UserService userService = new UserService();
     private final UserDAO userDAO = new UserDAO();
     private final AccountRequestDAO requestDAO = new AccountRequestDAO();
@@ -26,10 +27,12 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         UITheme.setup();
 
-        setTitle("Shop Management Login");
-        setSize(880, 540);
-        setMinimumSize(new Dimension(800, 500));
+        setTitle("Shop Desk Login");
+        setIconImage(ShopLogo.render(64));
+        setSize(980, 660);
+        setMinimumSize(new Dimension(900, 620));
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -42,61 +45,156 @@ public class LoginFrame extends JFrame {
 
         SwingUtilities.invokeLater(usernameField::requestFocusInWindow);
         setVisible(true);
+        SwingUtilities.invokeLater(this::ensureInitialAdmin);
+    }
+
+    private void ensureInitialAdmin() {
+        long userCount = userDAO.countUsers();
+        if (userCount > 0) return;
+        if (userCount < 0) {
+            JOptionPane.showMessageDialog(this, "The local database could not be read.", "Startup error", JOptionPane.ERROR_MESSAGE);
+            dispose();
+            return;
+        }
+        JTextField initialUsername = new JTextField();
+        JPasswordField initialPassword = new JPasswordField();
+        JPasswordField confirmPassword = new JPasswordField();
+        Object[] fields = {"Administrator username (3–32 letters, numbers, . _ -):", initialUsername,
+                "Administrator password (at least 12 characters):", initialPassword, "Confirm password:", confirmPassword};
+        int choice = JOptionPane.showConfirmDialog(this, fields, "Create First Administrator", JOptionPane.OK_CANCEL_OPTION);
+        char[] first = initialPassword.getPassword();
+        char[] second = confirmPassword.getPassword();
+        String username = initialUsername.getText().trim();
+        try {
+            if (choice != JOptionPane.OK_OPTION) {
+                dispose();
+                return;
+            }
+            if (!username.matches("[A-Za-z0-9._-]{3,32}") || first.length < 12
+                    || !java.util.Arrays.equals(first, second)) {
+                JOptionPane.showMessageDialog(this, "Enter a valid username and matching passwords of at least 12 characters.");
+                ensureInitialAdmin();
+                return;
+            }
+            if (!userDAO.createInitialAdmin(username, new String(first))) {
+                JOptionPane.showMessageDialog(this, "Could not create the first administrator. Restart the application and try again.",
+                        "Setup failed", JOptionPane.ERROR_MESSAGE);
+                dispose();
+            }
+        } finally {
+            java.util.Arrays.fill(first, '\0');
+            java.util.Arrays.fill(second, '\0');
+        }
     }
 
     private JPanel createBrandPanel() {
-        JPanel left = new JPanel(new GridBagLayout());
-        left.setBackground(UITheme.BACKGROUND);
-        left.setBorder(BorderFactory.createEmptyBorder(42, 42, 42, 42));
+        GradientPanel left = new GradientPanel();
+        left.setLayout(new GridBagLayout());
+        left.setBorder(BorderFactory.createEmptyBorder(48, 48, 48, 48));
 
         JPanel content = new JPanel();
         content.setOpaque(false);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
 
-        JLabel logo = new JLabel("SHOP DESK", SwingConstants.CENTER);
-        logo.setFont(new Font("Segoe UI", Font.BOLD, 30));
-        logo.setForeground(UITheme.TEXT);
-        logo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel mark = new JLabel(new ImageIcon(ShopLogo.render(68)));
+        mark.setPreferredSize(new Dimension(68, 68));
+        mark.setMaximumSize(new Dimension(68, 68));
+        mark.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel mark = new JLabel(AvatarUtil.avatarFor(null, 108));
-        mark.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel logo = new JLabel("Shop Desk");
+        logo.setFont(new Font("Segoe UI", Font.BOLD, 36));
+        logo.setForeground(Color.WHITE);
+        logo.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel tagline = new JLabel("Simple, secure shop operations.");
-        tagline.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        tagline.setForeground(UITheme.MUTED_TEXT);
-        tagline.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel tagline = new JLabel("A clearer way to run your shop.");
+        tagline.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        tagline.setForeground(new Color(203, 213, 225));
+        tagline.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel detail = new JLabel("Products, customers, sales, reports, and account support.");
-        detail.setForeground(UITheme.MUTED_TEXT);
-        detail.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel description = new JLabel("Sales, stock, and your team, all in sync.");
+        description.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        description.setForeground(new Color(203, 213, 225));
+        description.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        chips.setOpaque(false);
+        chips.setAlignmentX(Component.LEFT_ALIGNMENT);
+        chips.add(createHeroChip("LIVE INVENTORY"));
+        chips.add(createHeroChip("FASTER CHECKOUT"));
+        chips.add(createHeroChip("TEAM READY"));
+
+        JPanel note = new JPanel();
+        note.setOpaque(false);
+        note.setLayout(new BoxLayout(note, BoxLayout.Y_AXIS));
+        note.setBorder(BorderFactory.createEmptyBorder(22, 0, 0, 0));
+        note.setAlignmentX(Component.LEFT_ALIGNMENT);
+        note.add(createHeroLine("\u2713  Know what is in stock at a glance"));
+        note.add(Box.createRigidArea(new Dimension(0, 10)));
+        note.add(createHeroLine("\u2713  Keep daily sales and operations together"));
+        note.add(Box.createRigidArea(new Dimension(0, 10)));
+        note.add(createHeroLine("\u2713  Give every team member the right access"));
 
         content.add(mark);
-        content.add(Box.createRigidArea(new Dimension(0, 24)));
+        content.add(Box.createRigidArea(new Dimension(0, 22)));
         content.add(logo);
-        content.add(Box.createRigidArea(new Dimension(0, 10)));
-        content.add(tagline);
         content.add(Box.createRigidArea(new Dimension(0, 8)));
-        content.add(detail);
+        content.add(tagline);
+        content.add(Box.createRigidArea(new Dimension(0, 6)));
+        content.add(description);
+        content.add(Box.createRigidArea(new Dimension(0, 24)));
+        content.add(chips);
+        content.add(Box.createVerticalGlue());
+        content.add(note);
 
-        left.add(content);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1;
+        gbc.weighty = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        left.add(content, gbc);
         return left;
+    }
+
+    private JLabel createHeroChip(String text) {
+        JLabel chip = new JLabel(text);
+        chip.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        chip.setForeground(new Color(226, 232, 240));
+        chip.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(96, 165, 250, 120)),
+                BorderFactory.createEmptyBorder(7, 12, 7, 12)
+        ));
+        return chip;
+    }
+
+    private JLabel createHeroLine(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setForeground(new Color(203, 213, 225));
+        return label;
     }
 
     private JPanel createLoginPanel() {
         JPanel wrap = new JPanel(new GridBagLayout());
         UITheme.styleRoot(wrap);
-        wrap.setBorder(BorderFactory.createEmptyBorder(36, 42, 36, 42));
+        wrap.setBorder(BorderFactory.createEmptyBorder(24, 52, 24, 52));
 
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        UITheme.styleCard(card);
-        card.setPreferredSize(new Dimension(340, 420));
+        UITheme.styleElevatedCard(card);
+        card.setPreferredSize(new Dimension(380, 486));
+
+        JLabel eyebrow = new JLabel("YOUR SHOP, IN GOOD HANDS");
+        eyebrow.setForeground(UITheme.ACCENT_SOFT);
+        eyebrow.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        eyebrow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel title = new JLabel("Welcome back");
-        UITheme.styleTitle(title);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 30));
+        title.setForeground(UITheme.TEXT);
         title.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel subtitle = new JLabel("Sign in with your shop account.");
+        JLabel subtitle = new JLabel("Sign in to pick up where you left off.");
         UITheme.styleMuted(subtitle);
         subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -104,17 +202,18 @@ public class LoginFrame extends JFrame {
         passwordField = new JPasswordField();
         UITheme.styleField(usernameField);
         UITheme.styleField(passwordField);
-        usernameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        passwordField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        usernameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
+        passwordField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
 
-        roleIndicator = new JLabel("Role: enter username");
-        roleIndicator.setAlignmentX(Component.LEFT_ALIGNMENT);
-        UITheme.styleMuted(roleIndicator);
+        roleIndicator = new JLabel("Your account access is checked securely at sign in");
+        roleIndicator.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        roleBadge = UITheme.createStatusBadge(roleIndicator, UITheme.MUTED_TEXT, new Color(51, 65, 85));
+        roleBadge.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JButton loginBtn = new JButton("Sign In");
+        JButton loginBtn = new JButton("Sign in to Shop Desk   \u2192");
         UITheme.stylePrimaryButton(loginBtn);
         loginBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        loginBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        loginBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
 
         JCheckBox showPassword = new JCheckBox("Show password");
         showPassword.setOpaque(false);
@@ -123,33 +222,47 @@ public class LoginFrame extends JFrame {
         char defaultEcho = passwordField.getEchoChar();
         showPassword.addActionListener(e -> passwordField.setEchoChar(showPassword.isSelected() ? (char) 0 : defaultEcho));
 
+        JPanel links = new JPanel(new GridLayout(0, 1, 0, 2));
+        links.setOpaque(false);
+        links.setAlignmentX(Component.LEFT_ALIGNMENT);
+        links.setMaximumSize(new Dimension(Integer.MAX_VALUE, 88));
         JButton forgotBtn = createLinkButton("Forgot password?");
-        JButton requestAccountBtn = createLinkButton("Request new employee account");
-        JButton adminRecoveryBtn = createLinkButton("Admin recovery file reset");
+        JButton requestAccountBtn = createLinkButton("Request employee account");
+        JButton adminRecoveryBtn = createLinkButton("Reset admin with recovery file");
+        links.add(forgotBtn);
+        links.add(requestAccountBtn);
+        links.add(adminRecoveryBtn);
+
+        JLabel privacyNote = new JLabel("Your workspace is protected with secure sign-in.");
+        privacyNote.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        privacyNote.setForeground(UITheme.MUTED_TEXT);
+        privacyNote.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         statusLabel = new JLabel(" ");
         statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         UITheme.styleMuted(statusLabel);
 
+        card.add(eyebrow);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(title);
-        card.add(Box.createRigidArea(new Dimension(0, 6)));
+        card.add(Box.createRigidArea(new Dimension(0, 8)));
         card.add(subtitle);
-        card.add(Box.createRigidArea(new Dimension(0, 24)));
+        card.add(Box.createRigidArea(new Dimension(0, 26)));
         addField(card, "Username", usernameField);
-        card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(Box.createRigidArea(new Dimension(0, 14)));
         addField(card, "Password", passwordField);
-        card.add(Box.createRigidArea(new Dimension(0, 8)));
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(showPassword);
-        card.add(Box.createRigidArea(new Dimension(0, 8)));
-        card.add(roleIndicator);
         card.add(Box.createRigidArea(new Dimension(0, 12)));
+        card.add(roleBadge);
+        card.add(Box.createRigidArea(new Dimension(0, 10)));
         card.add(statusLabel);
         card.add(Box.createRigidArea(new Dimension(0, 14)));
         card.add(loginBtn);
-        card.add(Box.createRigidArea(new Dimension(0, 14)));
-        card.add(forgotBtn);
-        card.add(requestAccountBtn);
-        card.add(adminRecoveryBtn);
+        card.add(Box.createRigidArea(new Dimension(0, 18)));
+        card.add(links);
+        card.add(Box.createRigidArea(new Dimension(0, 7)));
+        card.add(privacyNote);
 
         usernameField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { updateRoleIndicator(); }
@@ -170,10 +283,10 @@ public class LoginFrame extends JFrame {
 
     private JButton createLinkButton(String text) {
         JButton button = new JButton(text);
-        button.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+        button.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
-        button.setForeground(UITheme.ACCENT);
+        button.setForeground(UITheme.ACCENT_SOFT);
         button.setHorizontalAlignment(SwingConstants.LEFT);
         button.setAlignmentX(Component.LEFT_ALIGNMENT);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -186,27 +299,19 @@ public class LoginFrame extends JFrame {
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         field.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(label);
-        panel.add(Box.createRigidArea(new Dimension(0, 6)));
+        panel.add(Box.createRigidArea(new Dimension(0, 7)));
         panel.add(field);
     }
 
     private void updateRoleIndicator() {
-        String username = usernameField.getText().trim();
-        if (username.isEmpty()) {
-            roleIndicator.setText("Role: enter username");
-            roleIndicator.setForeground(UITheme.MUTED_TEXT);
-            return;
-        }
+        setRoleBadge("Your account access is checked securely at sign in", UITheme.MUTED_TEXT, new Color(51, 65, 85));
+    }
 
-        User user = userDAO.findByUsername(username);
-        if (user == null) {
-            roleIndicator.setText("Role: account not found");
-            roleIndicator.setForeground(UITheme.WARNING);
-            return;
-        }
-
-        roleIndicator.setText("Role: " + user.getRole() + (user.isActive() ? "" : " (inactive)"));
-        roleIndicator.setForeground(user.isAdmin() ? UITheme.SUCCESS : UITheme.ACCENT);
+    private void setRoleBadge(String text, Color foreground, Color background) {
+        roleIndicator.setText(text);
+        roleIndicator.setForeground(foreground);
+        roleBadge.setBackground(background);
+        roleBadge.repaint();
     }
 
     private void login() {
@@ -283,8 +388,9 @@ public class LoginFrame extends JFrame {
 
         String password = new String(newPassword.getPassword());
         String confirm = new String(confirmPassword.getPassword());
-        if (username.getText().trim().isEmpty() || password.length() < 6 || !password.equals(confirm)) {
-            showStatus("Recovery reset needs matching passwords of 6+ characters.", true);
+        if (!username.getText().trim().matches("[A-Za-z0-9._-]{3,32}")
+                || !com.shop.service.PasswordSecurity.isValidNewPassword(password) || !password.equals(confirm)) {
+            showStatus("Recovery reset needs a valid username and matching passwords of 12+ characters.", true);
             return;
         }
 
@@ -300,5 +406,21 @@ public class LoginFrame extends JFrame {
     private void showStatus(String message, boolean error) {
         statusLabel.setText(message);
         statusLabel.setForeground(error ? UITheme.DANGER : UITheme.SUCCESS);
+    }
+
+    private static class GradientPanel extends JPanel {
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            GradientPaint paint = new GradientPaint(0, 0, new Color(14, 116, 144), getWidth(), getHeight(), new Color(30, 41, 59));
+            g2.setPaint(paint);
+            g2.fillRect(0, 0, getWidth(), getHeight());
+            g2.setColor(new Color(255, 255, 255, 22));
+            g2.fillOval(getWidth() - 170, 58, 260, 260);
+            g2.setColor(new Color(34, 197, 94, 26));
+            g2.fillOval(-80, getHeight() - 170, 240, 240);
+            g2.dispose();
+        }
     }
 }
