@@ -54,10 +54,6 @@ public final class UITheme {
         UIManager.put("Panel.background", BACKGROUND);
     }
 
-    public static Border paddedBorder(int top, int left, int bottom, int right) {
-        return BorderFactory.createEmptyBorder(top, left, bottom, right);
-    }
-
     public static Border surfaceBorder() {
         return BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(BORDER),
@@ -73,11 +69,6 @@ public final class UITheme {
     public static void styleSurface(JComponent component) {
         component.setBackground(SURFACE);
         component.setForeground(TEXT);
-    }
-
-    public static void styleToolbar(JComponent component) {
-        component.setOpaque(false);
-        component.setBorder(BorderFactory.createEmptyBorder(4, 0, 6, 0));
     }
 
     public static void styleCard(JPanel panel) {

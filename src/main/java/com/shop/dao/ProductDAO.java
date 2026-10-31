@@ -103,64 +103,6 @@ public class ProductDAO {
         return false;
     }
 
-    // ================= SEARCH BY NAME =================
-    public List<Product> searchProductByName(String name) {
-
-        List<Product> list = new ArrayList<>();
-        String sql = "SELECT * FROM products WHERE name LIKE ?";
-
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, "%" + name + "%");
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                list.add(new Product(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getDouble("price"),
-                        rs.getInt("quantity"),
-                        rs.getString("category")
-                ));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return list;
-    }
-
-    // ================= SEARCH BY CATEGORY =================
-    public List<Product> searchProductByCategory(String category) {
-
-        List<Product> list = new ArrayList<>();
-        String sql = "SELECT * FROM products WHERE category LIKE ?";
-
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, "%" + category + "%");
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                list.add(new Product(
-                        rs.getInt("id"),
-                        rs.getString("name"),
-                        rs.getDouble("price"),
-                        rs.getInt("quantity"),
-                        rs.getString("category")
-                ));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return list;
-    }
-
     // ================= GET PRODUCT BY ID =================
     public Product getProductById(int id) {
         String sql = "SELECT * FROM products WHERE id=?";

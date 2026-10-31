@@ -205,25 +205,6 @@ public class UserDAO {
         return 0;
     }
 
-    public boolean deleteUser(int id) {
-        if (id <= 0) return false;
-        User target = findById(id);
-        if (target == null || (target.isAdmin() && countActiveAdmins() <= 1)) return false;
-        String sql = "DELETE FROM users WHERE id=?";
-
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, id);
-            return stmt.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return false;
-    }
-
     public long countUsers() {
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();

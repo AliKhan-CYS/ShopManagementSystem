@@ -30,15 +30,6 @@ public class ProductService {
         return dao.deleteProduct(id);
     }
 
-    // SEARCH
-    public List<Product> searchProductByName(String name) {
-        return dao.searchProductByName(name);
-    }
-
-    public List<Product> searchProductByCategory(String category) {
-        return dao.searchProductByCategory(category);
-    }
-
     private boolean isValid(Product p) {
         return p != null && p.getName() != null && !p.getName().isBlank() && p.getName().length() <= 120
                 && p.getCategory() != null && !p.getCategory().isBlank() && p.getCategory().length() <= 80

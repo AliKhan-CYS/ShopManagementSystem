@@ -11,10 +11,6 @@ public class User {
     private String lastLogin;
     private String createdAt;
 
-    public User(int id, String username, String password, String role) {
-        this(id, username, password, role, true, null, null, null);
-    }
-
     public User(int id, String username, String password, String role, boolean active,
                 String profilePhotoPath, String lastLogin, String createdAt) {
         this.id = id;
